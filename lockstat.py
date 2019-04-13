@@ -11,7 +11,28 @@ import datetime
 
 # define BPF program
 
-prog = """
+locks = [
+    {
+        'id': 1,
+        'name': 'write_lock',
+        'title': 'Write Lock',
+        'lock_func': '_raw_write_lock'
+    },
+    {
+        'id': 2,
+        'name': 'read_lock',
+        'title': 'Read Lock',
+        'lock_func': '_raw_read_lock'
+    },
+    {
+        'id': 3,
+        'name': 'mutex',
+        'title': 'Mutex',
+        'lock_func': 'mutex_lock'
+    }
+]
+
+prog_header = """
 #include <linux/sched.h>
 #include <linux/spinlock_types.h>
 
@@ -27,15 +48,17 @@ struct data_t {
     u64 diff;
     u64 stack_id;
     u32 lock_count;
+    u32 type;
 };
 
-BPF_HASH(locks, raw_spinlock_t*, struct data_t);
-BPF_STACK_TRACE(stack_traces, 1024);
+BPF_HASH(locks, raw_spinlock_t*, struct data_t, 102400);
+BPF_STACK_TRACE(stack_traces, 102400);
 
+"""
+lock_func = """
+BPF_PERF_OUTPUT(_NAME_);
 
-BPF_PERF_OUTPUT(events);
-
-int lock(struct pt_regs *ctx, raw_spinlock_t *lock) {
+int lock__NAME_(struct pt_regs *ctx, raw_spinlock_t *lock) {
 
     u32 current_pid = bpf_get_current_pid_tgid();
     if(current_pid == CUR_PID)
@@ -62,7 +85,7 @@ int lock(struct pt_regs *ctx, raw_spinlock_t *lock) {
     return 0;
 }
 
-int release(struct pt_regs *ctx, raw_spinlock_t *lock) {
+int release__NAME_(struct pt_regs *ctx, raw_spinlock_t *lock) {
     u64 present = bpf_ktime_get_ns();
     
     u32 current_pid = bpf_get_current_pid_tgid();
@@ -77,7 +100,8 @@ int release(struct pt_regs *ctx, raw_spinlock_t *lock) {
         data->present_time = present;
         data->diff = present - data->ts;
         data->stack_id = stack_traces.get_stackid(ctx, BPF_F_REUSE_STACKID);
-        events.perf_submit(ctx, data, sizeof(struct data_t));
+        data->type = _ID_;
+        _NAME_.perf_submit(ctx, data, sizeof(struct data_t));
     }
     return 0;
 }
@@ -110,10 +134,18 @@ int release(struct pt_regs *ctx, raw_spinlock_t *lock) {
 
 # load BPF program
 current_pid = os.getpid()
+# Generate program
+prog = prog_header
+for lock in locks:
+    prog += lock_func.replace("_ID_", str(lock['id'])).replace("_NAME_", lock['name'])
+
 prog = prog.replace("CUR_PID", str(current_pid))
+
 b = BPF(text=prog)
-b.attach_kprobe(event="mutex_write_lock", fn_name="lock")
-b.attach_kretprobe(event="mutex_write_lock", fn_name="release")
+for lock in locks:
+    b.attach_kprobe(event=lock['lock_func'], fn_name="lock_%s" % lock['name'])
+    b.attach_kretprobe(event=lock['lock_func'], fn_name="release_%s" % lock['name'])
+
 events = {}
 # header
 print("%-18s %-16s %-6s %s" % ("TIME(s)", "COMM", "PID", "LOCKTIME"))
@@ -123,11 +155,32 @@ start = 0
 
 
 def generate_report(event_list):
+    for event in event_list:
+        for lock in locks:
+            if event['type'] == lock['id']:
+                event['type_name'] = lock['title']
+                break
+
     report_data = {}
     report_data['all_chart'] = event_list[:10]
     lock_times = {'write_lock': 100}
     report_data['lock_times'] = lock_times
     report_data['all_table'] = event_list[:20]
+
+    locks_report = []
+    for lock in locks:
+        lock_report = dict(lock)
+        lock_report['events'] = []
+        lock_report['time'] = 0
+        for event in event_list:
+            if event['type'] == lock['id']:
+                lock_report['events'].append(event)
+                lock_report['time'] += event['lock_time']
+        lock_report['events'] = lock_report['events'][:20]
+        locks_report.append(lock_report)
+    report_data['locks_report'] = locks_report
+    # print(locks_report)
+
     env = Environment(loader=FileSystemLoader('template'))
     with open("lockstat_report.html", "w") as out_file:
         template = env.get_template('report.html')
@@ -163,44 +216,47 @@ def get_stack(stack_id):
 
 def print_event(cpu, data, size):
     global start
-    event = b["events"].event(data)
-    if start == 0:
-        start = event.ts
-    time_s = (float(event.ts - start)) / 1000000000
-    # print("%-18.9f %-16s %-6d %-6d %-6d %-6f     %-15f %-6d" % (time_s, event.comm, event.pid, event.tid,
-    #                                                             event.lock,
-    #                                                             (float(event.present_time - start)) / 1000000000,
-    #                                                             event.lock_time, event.diff))
-    # print_stack(event.stack_id)
-    trace = get_stack(event.stack_id)
-    if event.lock in events:
-        key = event.lock
-        events[key]['ts'] = event.ts
-        events[key]['lock'] = event.lock
-        events[key]['present_time'] = event.present_time
-        events[key]['lock_time'] = event.lock_time
-        events[key]['diff'] = event.diff
-        events[key]['tid'] = event.tid
-        events[key]['pid'] = event.pid
-        events[key]['comm'] = event.comm
-        events[key]['lock_count'] = event.lock_count
-        if trace in events[event.lock]['stack_traces']:
-            events[event.lock]['stack_traces'][trace] += 1
+    for lock in locks:
+        event = b[lock['name']].event(data)
+        if start == 0:
+            start = event.ts
+        time_s = (float(event.ts - start)) / 1000000000
+        # print("%-18.9f %-16s %-6d %-6d %-6d %-6f     %-15f %-6d" % (time_s, event.comm, event.pid, event.tid,
+        #                                                             event.lock,
+        #                                                             (float(event.present_time - start)) / 1000000000,
+        #                                                             event.lock_time, event.diff))
+        # print_stack(event.stack_id)
+        trace = get_stack(event.stack_id)
+        if event.lock in events:
+            key = event.lock
+            events[key]['ts'] = event.ts
+            events[key]['lock'] = event.lock
+            events[key]['present_time'] = event.present_time
+            events[key]['lock_time'] = event.lock_time
+            events[key]['diff'] = event.diff
+            events[key]['tid'] = event.tid
+            events[key]['pid'] = event.pid
+            events[key]['comm'] = event.comm
+            events[key]['lock_count'] = event.lock_count
+            events[key]['type'] = event.type
+            if trace in events[event.lock]['stack_traces']:
+                events[event.lock]['stack_traces'][trace] += 1
+            else:
+                events[event.lock]['stack_traces'][trace] = 1
         else:
-            events[event.lock]['stack_traces'][trace] = 1
-    else:
-        event_dict = {'ts': event.ts,
-                      'lock': event.lock,
-                      'present_time': event.present_time,
-                      'lock_time': event.lock_time,
-                      'diff': event.diff,
-                      'tid': event.tid,
-                      'pid': event.pid,
-                      'comm': event.comm,
-                      'lock_count': event.lock_count,
-                      'stack_traces': {trace: 1}
-                      }
-        events[event_dict['lock']] = event_dict
+            event_dict = {'ts': event.ts,
+                          'lock': event.lock,
+                          'present_time': event.present_time,
+                          'lock_time': event.lock_time,
+                          'diff': event.diff,
+                          'tid': event.tid,
+                          'pid': event.pid,
+                          'comm': event.comm,
+                          'lock_count': event.lock_count,
+                          'type': event.type,
+                          'stack_traces': {trace: 1}
+                          }
+            events[event_dict['lock']] = event_dict
     # print(events[event.lock]['stack_traces'])
     # Adding stack trace to the struct
     # trace = get_stack(event.stack_id)
@@ -221,7 +277,8 @@ def print_event(cpu, data, size):
 
 
 # loop with callback to print_event
-b["events"].open_perf_buffer(print_event)
+for lock in locks:
+    b[lock['name']].open_perf_buffer(print_event)
 start_time = datetime.datetime.now()
 try:
     while 1:
@@ -240,3 +297,5 @@ except KeyboardInterrupt:
     # event_list.sort(key=lambda kv: kv['lock_time'], reverse=True)
     # generate_histogram(event_list[:10])
     generate_report(event_list)
+    # for key, event in events.items():
+    #     print(event)
