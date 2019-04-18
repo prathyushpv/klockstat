@@ -36,6 +36,12 @@ prog_header = """
 #include <linux/sched.h>
 #include <linux/spinlock_types.h>
 
+// define struct for key
+
+struct key_t {
+    u64 pid;
+    raw_spinlock_t* lock;
+};
 // define output data structure in C
 struct data_t {
     u32 pid;
@@ -51,12 +57,14 @@ struct data_t {
     u32 type;
 };
 
-BPF_HASH(locks, raw_spinlock_t*, struct data_t, 102400);
+//BPF_HASH(locks, struct key_t, struct data_t, 102400);
+// todo multiple stack traces
 BPF_STACK_TRACE(stack_traces, 102400);
 
 """
 lock_func = """
 BPF_PERF_OUTPUT(_NAME_);
+BPF_HASH(map__NAME_, struct key_t, struct data_t, 102400);
 
 int lock__NAME_(struct pt_regs *ctx, raw_spinlock_t *lock) {
 
@@ -65,8 +73,9 @@ int lock__NAME_(struct pt_regs *ctx, raw_spinlock_t *lock) {
         return 0;
         
     struct data_t data = {};
+    struct key_t key = {bpf_get_current_pid_tgid(), lock};
     struct data_t *data_ptr;
-    data_ptr = locks.lookup(&lock);
+    data_ptr = map__NAME_.lookup(&key);
     if(data_ptr)
     {
         data_ptr->ts = bpf_ktime_get_ns();
@@ -80,7 +89,7 @@ int lock__NAME_(struct pt_regs *ctx, raw_spinlock_t *lock) {
         bpf_get_current_comm(&data.comm, sizeof(data.comm));
         data.lock = (u64)lock;
         data.lock_count = 1;
-        locks.insert(&lock, &data);
+        map__NAME_.insert(&key, &data);
     }
     return 0;
 }
@@ -93,7 +102,8 @@ int release__NAME_(struct pt_regs *ctx, raw_spinlock_t *lock) {
         return 0;
         
     struct data_t *data;
-    data = locks.lookup(&lock);
+    struct key_t key = {bpf_get_current_pid_tgid(), lock};
+    data = map__NAME_.lookup(&key);
     if(data)
     {
         data->lock_time += (present - data->ts);
@@ -176,6 +186,7 @@ def generate_report(event_list):
             if event['type'] == lock['id']:
                 lock_report['events'].append(event)
                 lock_report['time'] += event['lock_time']
+            # print(event['stack_traces'])
         lock_report['events'] = lock_report['events'][:20]
         locks_report.append(lock_report)
     report_data['locks_report'] = locks_report
@@ -232,29 +243,32 @@ def print_event(cpu, data, size):
             events[key]['ts'] = event.ts
             events[key]['lock'] = event.lock
             events[key]['present_time'] = event.present_time
-            events[key]['lock_time'] = event.lock_time
+            events[key]['lock_time'] += event.diff
             events[key]['diff'] = event.diff
             events[key]['tid'] = event.tid
             events[key]['pid'] = event.pid
             events[key]['comm'] = event.comm
-            events[key]['lock_count'] = event.lock_count
+            events[key]['lock_count'] += 1
             events[key]['type'] = event.type
-            if trace in events[event.lock]['stack_traces']:
-                events[event.lock]['stack_traces'][trace] += 1
+            if trace in events[key]['stack_traces']:
+                events[key]['stack_traces'][trace]['count'] += 1
+                events[key]['stack_traces'][trace]['time'] += event.diff
             else:
-                events[event.lock]['stack_traces'][trace] = 1
+                events[key]['stack_traces'][trace] = {}
+                events[key]['stack_traces'][trace]['count'] = 1
+                events[key]['stack_traces'][trace]['time'] = event.diff
         else:
             event_dict = {'ts': event.ts,
                           'lock': event.lock,
                           'present_time': event.present_time,
-                          'lock_time': event.lock_time,
+                          'lock_time': event.diff,
                           'diff': event.diff,
                           'tid': event.tid,
                           'pid': event.pid,
                           'comm': event.comm,
-                          'lock_count': event.lock_count,
+                          'lock_count': 1,
                           'type': event.type,
-                          'stack_traces': {trace: 1}
+                          'stack_traces': {trace: {'count':1, 'time':event.diff}}
                           }
             events[event_dict['lock']] = event_dict
     # print(events[event.lock]['stack_traces'])
@@ -278,15 +292,17 @@ def print_event(cpu, data, size):
 
 # loop with callback to print_event
 for lock in locks:
-    b[lock['name']].open_perf_buffer(print_event)
+    b[lock['name']].open_perf_buffer(print_event, page_cnt=512)
 start_time = datetime.datetime.now()
 try:
     while 1:
         b.perf_buffer_poll()
         time_elapsed = datetime.datetime.now() - start_time
-        if time_elapsed.seconds > 10:
+        if time_elapsed.seconds > 30:
             raise KeyboardInterrupt
 except KeyboardInterrupt:
+    pass
+finally:
     min_lock_time = 100000000000
     for key, event in events.iteritems():
         if event['diff'] < min_lock_time:

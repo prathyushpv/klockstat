@@ -92,7 +92,7 @@
             <div class="dashboard-ecommerce">
                 <div class="container-fluid dashboard-content ">
                     <!-- ============================================================== -->
-                    <!-- pageheader  -->
+                    <!-- All Locks  -->
                     <!-- ============================================================== -->
                     <div class="row">
                         <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12">
@@ -240,6 +240,7 @@
                                           <thead>
                                               <tr class="table-primary">
                                                   <th scope="col">Lock Address</th>
+                                                  <th scope="col">Lock Type</th>
                                                   <th scope="col">Thread Name</th>
                                                   <th scope="col">TGID</th>
                                                   <th scope="col">TID</th>
@@ -252,6 +253,7 @@
                                               {% for row in data['all_table']%}
                                               <tr>
                                                   <td>{{row['lock']}}</td>
+                                                  <td>{{row['type_name']}}</td>
                                                   <td>{{row['comm']}}</td>
                                                   <td>{{row['pid']}}</td>
                                                   <td>{{row['tid']}}</td>
@@ -266,6 +268,80 @@
                               </div>
                           </div>
                         </div>
+                        <!-- The loop to display lock wise details -->
+                        {% for lock_report in data['locks_report']%}
+                        <div class="row">
+                          <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12">
+                              <div class="page-header">
+                                  <h2 class="pageheader-title">{{lock_report['title']}}</h2>
+                                  <p class="pageheader-text">Statistics related to of locks of type {{lock_report['title']}}</p>
+                                  <div class="page-breadcrumb">
+                                      <nav aria-label="breadcrumb">
+                                          <ol class="breadcrumb">
+                                              <li class="breadcrumb-item"><a href="#" class="breadcrumb-link">Overall</a></li>
+                                              <li class="breadcrumb-item active" aria-current="page">Dashboard</li>
+                                          </ol>
+                                      </nav>
+                                  </div>
+                              </div>
+                          </div>
+                      </div>
+                      <!-- ============================================================== -->
+                      <!-- end pageheader  -->
+                      <!-- ============================================================== -->
+                          <div class="row">
+                              <div class="col-xl-6 col-lg-12 col-md-12 col-sm-12 col-12">
+                                  <div class="card">
+                                      <div class="card-header">
+                                          <h5 class="mb-0">Locks With Highest Waiting Times</h5>
+                                      </div>
+                                      <div class="card-body">
+                                          <div class="ct-chart-product ct-golden-section" id="bar_{{lock_report['name']}}"></div>
+                                      </div>
+                                  </div>
+                              </div>
+                              <!-- ============================================================== -->
+                              <!-- end product sales  -->
+                              <!-- ============================================================== -->
+                          </div>
+                          <div class="row">
+                            <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12">
+                                <div class="card">
+                                    <h5 class="card-header">Lock Details</h5>
+                                    <div class="card-body">
+                                        <table class="table table-hover">
+                                            <thead>
+                                                <tr class="table-primary">
+                                                    <th scope="col">Lock Address</th>
+                                                    <th scope="col">Lock Type</th>
+                                                    <th scope="col">Thread Name</th>
+                                                    <th scope="col">TGID</th>
+                                                    <th scope="col">TID</th>
+                                                    <th scope="col">Wait Time</th>
+                                                    <th scope="col">Lock Count</th>
+                                                    <th scope="col">Stack Traces</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for row in lock_report['events']%}
+                                                <tr>
+                                                    <td>{{row['lock']}}</td>
+                                                    <td>{{row['type_name']}}</td>
+                                                    <td>{{row['comm']}}</td>
+                                                    <td>{{row['pid']}}</td>
+                                                    <td>{{row['tid']}}</td>
+                                                    <td>{{row['lock_time']}}</td>
+                                                    <td>{{row['lock_count']}}</td>
+                                                    <td><button type="button" class="btn btn-primary btn-xs" data-toggle="modal" data-target="#{{row['lock']}}_modal">Show Stacks</button></td>
+                                                </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                          </div>
+                        {% endfor %}
                     </div>
 
                 </div>
@@ -429,9 +505,9 @@
      data.addColumn('string', 'Topping');
      data.addColumn('number', 'Slices');
      data.addRows([
-       ['Write Lock', 20],
-       ['Mutex', 60],
-       ['Futex', 20],
+       {% for lock_data in data['locks_report']%}
+       ["{{lock_data['title']}}", {{lock_data['time']}}],
+       {% endfor %}
      ]);
 
      // Set chart options
@@ -469,6 +545,34 @@
 
       var chart = new google.visualization.ColumnChart(document.getElementById("ct-chart-product"));
       chart.draw(data2, options2);
+
+      {% for lock_data in data['locks_report']%}
+          var data_{{lock_data['name']}} = new google.visualization.DataTable();
+             data_{{lock_data['name']}}.addColumn('string', 'Lock');
+             data_{{lock_data['name']}}.addColumn('number', 'Time');
+             // A column for custom tooltip content
+             data_{{lock_data['name']}}.addColumn({type: 'string', role: 'tooltip', 'p': {'html': true}});
+             data_{{lock_data['name']}}.addRows([
+               {% for row in lock_data['events']%}
+                   ['{{ loop.index }}', {{row['lock_time']}},'<b>{{row["comm"]}}</b></br>pid:{{row["pid"]}}</br>lock count:{{row["lock_count"]}}'],
+               {% endfor %}
+             ]);
+
+
+           var options_{{lock_data['name']}} = {
+             legend:'none',
+             tooltip: {isHtml: true},
+             hAxis: {
+               title: 'Locks',
+             },
+             vAxis: {
+               title: 'Waiting Time (ns)'
+             }
+           };
+
+           var chart_{{lock_data['name']}} = new google.visualization.ColumnChart(document.getElementById("bar_{{lock_data['name']}}"));
+           chart_{{lock_data['name']}}.draw(data_{{lock_data['name']}}, options_{{lock_data['name']}});
+      {% endfor %}
    }
 
 
@@ -495,8 +599,8 @@
     // initiate drawing the chart
     chart.draw();
  </script>
-
- {% for lock in data['all_table'] %}
+{% for lock_data in data['locks_report'] %}
+ {% for lock in lock_data['events'] %}
    <!-- Modal -->
 
    <div class="modal" id="{{lock['lock']}}_modal" role="dialog">
@@ -513,14 +617,16 @@
                  <thead>
                      <tr class="table-primary">
                          <th scope="col">Stack</th>
-                         <th scope="col">Count</th>
+                         <th scope="col">Lock Operation Count</th>
+                         <th scope="col">Locking time</th>
                      </tr>
                  </thead>
                  <tbody>
-             {% for stack, count in lock['stack_traces'].items() %}
+             {% for stack, details in lock['stack_traces'].items() %}
                      <tr>
                          <td>{{stack}}</td>
-                         <td>{{count}}</td>
+                         <td>{{details['count']}}</td>
+                         <td>{{details['time']}}</td>
                      </tr>
              {% endfor %}
                </tbody>
@@ -534,6 +640,8 @@
      </div>
    </div>
  {% endfor %}
+{% endfor %}
+
 </body>
 
 </html>
