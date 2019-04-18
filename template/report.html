@@ -17,6 +17,8 @@
         /* bug fix - no overlay */
         opacity:0.5 !important;
     }
+    .modal-content {width:550px !important;left:10% !important;}
+
     </style>
     <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.8.1/css/all.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/MaterialDesign-Webfont/3.5.95/css/materialdesignicons.min.css">
@@ -619,14 +621,16 @@
                          <th scope="col">Stack</th>
                          <th scope="col">Lock Operation Count</th>
                          <th scope="col">Locking time</th>
+                         <th scope="col">Percentage Locking Time</th>
                      </tr>
                  </thead>
                  <tbody>
-             {% for stack, details in lock['stack_traces'].items() %}
+             {% for row in lock['stack_list'] %}
                      <tr>
-                         <td>{{stack}}</td>
-                         <td>{{details['count']}}</td>
-                         <td>{{details['time']}}</td>
+                         <td>{{row[0]}}</td>
+                         <td>{{row[1]}}</td>
+                         <td>{{row[2]}}</td>
+                         <td>{{row[3]}}</td>
                      </tr>
              {% endfor %}
                </tbody>

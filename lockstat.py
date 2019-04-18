@@ -24,12 +24,12 @@ locks = [
         'title': 'Read Lock',
         'lock_func': '_raw_read_lock'
     },
-    {
-        'id': 3,
-        'name': 'mutex',
-        'title': 'Mutex',
-        'lock_func': 'mutex_lock'
-    }
+    # {
+    #     'id': 3,
+    #     'name': 'mutex',
+    #     'title': 'Mutex',
+    #     'lock_func': 'mutex_lock'
+    # }
 ]
 
 prog_header = """
@@ -184,6 +184,9 @@ def generate_report(event_list):
         lock_report['time'] = 0
         for event in event_list:
             if event['type'] == lock['id']:
+                event['stack_list'] = [[trace, details['count'], details['time'], round(float(details['time'])/event['lock_time']*100, 2)] 
+                                        for trace, details in event['stack_traces'].items()]
+                event['stack_list'] = sorted(event['stack_list'], key=lambda kv: kv[2], reverse=True)
                 lock_report['events'].append(event)
                 lock_report['time'] += event['lock_time']
             # print(event['stack_traces'])
@@ -221,7 +224,7 @@ def get_stack(stack_id):
     stack = list(b.get_table("stack_traces").walk(stack_id))
     stack_str = ""
     for addr in stack:
-        stack_str += "%s" % (b.sym(addr, -1, show_module=True, show_offset=False)) + "<br>"
+        stack_str += "%s" % (b.sym(addr, -1, show_module=False, show_offset=False)) + "<br>"
     return stack_str
 
 
@@ -298,7 +301,7 @@ try:
     while 1:
         b.perf_buffer_poll()
         time_elapsed = datetime.datetime.now() - start_time
-        if time_elapsed.seconds > 30:
+        if time_elapsed.seconds > 32:
             raise KeyboardInterrupt
 except KeyboardInterrupt:
     pass
