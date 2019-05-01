@@ -23,7 +23,7 @@
     <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.8.1/css/all.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/MaterialDesign-Webfont/3.5.95/css/materialdesignicons.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/c3/0.7.0/c3.css">
-    <title>Lockstat - Kernel Lock Monitoring</title>
+    <title>kLockStat - Kernel Lock Monitoring</title>
 </head>
 
 <body>
@@ -36,7 +36,7 @@
         <!-- ============================================================== -->
         <div class="dashboard-header">
             <nav class="navbar navbar-expand-lg bg-white fixed-top">
-                <a class="navbar-brand" href="index.html">Lockstat</a>
+                <a class="navbar-brand" href="index.html">kLockStat</a>
                 <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>
                 </button>
@@ -68,18 +68,7 @@
                             <li class="nav-item ">
                                 <a class="nav-link active" href="#" data-toggle="collapse" aria-expanded="false" data-target="#submenu-1" aria-controls="submenu-1"><i class="fa fa-fw fa-chart-pie"></i>Overall <span class="badge badge-success">6</span></a>
                             </li>
-                            <li class="nav-item">
-                                <a class="nav-link" href="#" data-toggle="collapse" aria-expanded="false" data-target="#submenu-2" aria-controls="submenu-2"><i class="fa fa-fw fa-lock"></i>Write Lock</a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" href="#" data-toggle="collapse" aria-expanded="false" data-target="#submenu-3" aria-controls="submenu-3"><i class="fas fa-fw fa-lock"></i>Mutex</a>
-
-                            </li>
-                            <li class="nav-item ">
-                                <a class="nav-link" href="#" data-toggle="collapse" aria-expanded="false" data-target="#submenu-4" aria-controls="submenu-4"><i class="fas fa-fw fa-lock"></i>Futex</a>
-
-
-                        </ul>
+                         </ul>
                     </div>
                 </nav>
             </div>
@@ -115,59 +104,59 @@
                     <!-- ============================================================== -->
                     <!-- end pageheader  -->
                     <!-- ============================================================== -->
-                    <div class="ecommerce-widget">
+<!--                    <div class="ecommerce-widget">-->
 
-                        <div class="row">
-                            <div class="col-xl-3 col-lg-6 col-md-6 col-sm-12 col-12">
-                                <div class="card">
-                                    <div class="card-body">
-                                        <h5 class="text-muted">Write Locks</h5>
-                                        <div class="metric-value d-inline-block">
-                                            <h1 class="mb-1">12099 ns</h1>
-                                        </div>
-                                        <div class="metric-label d-inline-block float-right text-success font-weight-bold">
-                                            <span>10 %</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-xl-3 col-lg-6 col-md-6 col-sm-12 col-12">
-                                <div class="card">
-                                    <div class="card-body">
-                                        <h5 class="text-muted">Mutexes</h5>
-                                        <div class="metric-value d-inline-block">
-                                            <h1 class="mb-1">12099 ns</h1>
-                                        </div>
-                                        <div class="metric-label d-inline-block float-right text-primary font-weight-bold">
-                                            <span>30 %</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-xl-3 col-lg-6 col-md-6 col-sm-12 col-12">
-                                <div class="card">
-                                    <div class="card-body">
-                                        <h5 class="text-muted">Futexes</h5>
-                                        <div class="metric-value d-inline-block">
-                                            <h1 class="mb-1">10 ns</h1>
-                                        </div>
-                                        <div class="metric-label d-inline-block float-right text-danger font-weight-bold">
-                                            <span>60 %</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-xl-3 col-lg-6 col-md-6 col-sm-12 col-12">
-                                <div class="card">
-                                    <div class="card-body">
-                                        <h5 class="text-muted">Total</h5>
-                                        <div class="metric-value d-inline-block">
-                                            <h1 class="mb-1">28000 ns</h1>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+<!--                        <div class="row">-->
+<!--                            <div class="col-xl-3 col-lg-6 col-md-6 col-sm-12 col-12">-->
+<!--                                <div class="card">-->
+<!--                                    <div class="card-body">-->
+<!--                                        <h5 class="text-muted">Write Locks</h5>-->
+<!--                                        <div class="metric-value d-inline-block">-->
+<!--                                            <h1 class="mb-1">12099 ns</h1>-->
+<!--                                        </div>-->
+<!--                                        <div class="metric-label d-inline-block float-right text-success font-weight-bold">-->
+<!--                                            <span>10 %</span>-->
+<!--                                        </div>-->
+<!--                                    </div>-->
+<!--                                </div>-->
+<!--                            </div>-->
+<!--                            <div class="col-xl-3 col-lg-6 col-md-6 col-sm-12 col-12">-->
+<!--                                <div class="card">-->
+<!--                                    <div class="card-body">-->
+<!--                                        <h5 class="text-muted">Mutexes</h5>-->
+<!--                                        <div class="metric-value d-inline-block">-->
+<!--                                            <h1 class="mb-1">12099 ns</h1>-->
+<!--                                        </div>-->
+<!--                                        <div class="metric-label d-inline-block float-right text-primary font-weight-bold">-->
+<!--                                            <span>30 %</span>-->
+<!--                                        </div>-->
+<!--                                    </div>-->
+<!--                                </div>-->
+<!--                            </div>-->
+<!--                            <div class="col-xl-3 col-lg-6 col-md-6 col-sm-12 col-12">-->
+<!--                                <div class="card">-->
+<!--                                    <div class="card-body">-->
+<!--                                        <h5 class="text-muted">Futexes</h5>-->
+<!--                                        <div class="metric-value d-inline-block">-->
+<!--                                            <h1 class="mb-1">10 ns</h1>-->
+<!--                                        </div>-->
+<!--                                        <div class="metric-label d-inline-block float-right text-danger font-weight-bold">-->
+<!--                                            <span>60 %</span>-->
+<!--                                        </div>-->
+<!--                                    </div>-->
+<!--                                </div>-->
+<!--                            </div>-->
+<!--                            <div class="col-xl-3 col-lg-6 col-md-6 col-sm-12 col-12">-->
+<!--                                <div class="card">-->
+<!--                                    <div class="card-body">-->
+<!--                                        <h5 class="text-muted">Total</h5>-->
+<!--                                        <div class="metric-value d-inline-block">-->
+<!--                                            <h1 class="mb-1">28000 ns</h1>-->
+<!--                                        </div>-->
+<!--                                    </div>-->
+<!--                                </div>-->
+<!--                            </div>-->
+<!--                        </div>-->
 
                             <!-- ============================================================== -->
                             <!-- end recent orders  -->
@@ -177,7 +166,7 @@
                             <!-- ============================================================== -->
                             <!-- end customer acquistion  -->
                             <!-- ============================================================== -->
-                        </div>
+<!--                        </div>-->
                         <div class="row">
                             <!-- ============================================================== -->
               				                        <!-- product category  -->
@@ -221,7 +210,7 @@
                                 <!-- top perfomimg  -->
                                 <!-- ============================================================== -->
                                 <div class="card">
-                                    <h5 class="card-header">Processes With Highest Waiting Time</h5>
+                                    <h5 class="card-header">Distribution of Lock Waiting times</h5>
                                     <div class="card-body">
                                         <div class="" id="box_plot">
 
@@ -257,8 +246,8 @@
                                                   <td>{{row['lock']}}</td>
                                                   <td>{{row['type_name']}}</td>
                                                   <td>{{row['comm']}}</td>
-                                                  <td>{{row['pid']}}</td>
-                                                  <td>{{row['tid']}}</td>
+                                                  <td width="10%">{% for pid in row['pid']%}{{pid}}, {% endfor %}</td>
+                                                  <td width="10%">{% for tid in row['tid']%}{{tid}}, {% endfor %}</td>
                                                   <td>{{row['lock_time']}}</td>
                                                   <td>{{row['lock_count']}}</td>
                                                   <td><button type="button" class="btn btn-primary btn-xs" data-toggle="modal" data-target="#{{row['lock']}}_modal">Show Stacks</button></td>
@@ -330,8 +319,8 @@
                                                     <td>{{row['lock']}}</td>
                                                     <td>{{row['type_name']}}</td>
                                                     <td>{{row['comm']}}</td>
-                                                    <td>{{row['pid']}}</td>
-                                                    <td>{{row['tid']}}</td>
+                                                    <td width="10%">{% for pid in row['pid']%}{{pid}}, {% endfor %}</td>
+                                                    <td width="10%">{% for tid in row['tid']%}{{tid}}, {% endfor %}</td>
                                                     <td>{{row['lock_time']}}</td>
                                                     <td>{{row['lock_count']}}</td>
                                                     <td><button type="button" class="btn btn-primary btn-xs" data-toggle="modal" data-target="#{{row['lock']}}_modal">Show Stacks</button></td>
@@ -529,7 +518,7 @@
         data2.addColumn({type: 'string', role: 'tooltip', 'p': {'html': true}});
         data2.addRows([
           {% for row in data['all_table']%}
-              ['{{ loop.index }}', {{row['lock_time']}},'<b>{{row["comm"]}}</b></br>pid:{{row["pid"]}}</br>lock count:{{row["lock_count"]}}'],
+            ['{{ loop.index }}', {{row['lock_time']}},'<b>{{row["comm"]}}</b></br>Type:{{row["type_name"]}}</br>lock count:{{row["lock_count"]}}</br>Wait Time:{{row["lock_time"]}}'],
           {% endfor %}
         ]);
 
@@ -556,7 +545,7 @@
              data_{{lock_data['name']}}.addColumn({type: 'string', role: 'tooltip', 'p': {'html': true}});
              data_{{lock_data['name']}}.addRows([
                {% for row in lock_data['events']%}
-                   ['{{ loop.index }}', {{row['lock_time']}},'<b>{{row["comm"]}}</b></br>pid:{{row["pid"]}}</br>lock count:{{row["lock_count"]}}'],
+                   ['{{ loop.index }}', {{row['lock_time']}},'<b>{{row["comm"]}}</b></br>Type:{{row["type_name"]}}</br>lock count:{{row["lock_count"]}}</br>Wait Time:{{row["lock_time"]}}'],
                {% endfor %}
              ]);
 
@@ -582,11 +571,9 @@
 
    // create data
     var data = [
-      {x: "1", low: 1000, q1: 1050, median: 1200, q3: 1800, high: 2000, outliers: [800, 2500, 3200]},
-      {x: "2", low: 2500, q1: 3000, median: 3800, q3: 3900, high: 4000},
-      {x: "3", low: 2000, q1: 2300, median: 2500, q3: 2900, high: 3000},
-      {x: "4", low: 4000, q1: 5000, median: 6500, q3: 6500, high: 7000, outliers: [8930]},
-      {x: "5", low: 8000, q1: 8400, median: 8500, q3: 8800, high: 9000, outliers: [6950, 3000]}
+    {% for lock, details in data['box_data'].items()%}
+        {x: "{{lock}}", low: {{details[0]}}, q1: {{details[1]}}, median: {{details[2]}}, q3: {{details[3]}}, high: {{details[4]}}},
+    {% endfor %}
     ];
 
     // create a chart
