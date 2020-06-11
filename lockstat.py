@@ -241,7 +241,7 @@ def get_stack(stack_id):
     for addr in stack:
         func_name = b.sym(addr, -1, show_module=False, show_offset=False)
         # if "kretprobe_trampoline" not in func_name:
-        stack_str += func_name + "<br>"
+        stack_str += str(func_name) + "<br>"
     return stack_str
 
 
@@ -325,7 +325,7 @@ start = 0
 
 # loop with callback to print_event
 for lock in locks:
-    b[lock['name']].open_perf_buffer(print_event, page_cnt=16384)
+    b[lock['name']].open_perf_buffer(print_event, page_cnt=4096)
 start_time = datetime.datetime.now()
 try:
     while 1:
